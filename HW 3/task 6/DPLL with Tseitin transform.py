@@ -317,7 +317,7 @@ def dnf2cnf_Tseitin_sup(dnf, b, oldvar, newvar):
 def dnf2cnf_Tseitin(dnf, oldvar, newvar):
     print(dnf)
     l, d = dnf2cnf_Tseitin_sup(dnf, [], oldvar, newvar)
-    return [[-l]]+d
+    return [[l]]+d
 
 """
 Применяю DPLL к формуле из задания 3 этой лекции.
@@ -453,7 +453,7 @@ def make_colorized_syms(var_list, color_count):
         var_to_colorS_VAR[v] = ints
     return var_to_colorS_SYMS, var_to_colorS_VAR
 
-"""
+
 G = nx.Graph()
 G.add_edge(1, 2)  # default edge data=1
 G.add_edge(2, 3, weight=0.9)  # specify edge data
@@ -471,7 +471,7 @@ G.add_edges_from(edges)
 cliques = find_cliques_size_k(G, k)
 
 
-
+"""
 var_to_colorS_VAR, newvars, cnf, _ = make_formula_on_all_cliques(cliques, G.nodes(), k)
 
 M = { }
@@ -485,5 +485,6 @@ answer = DPLL(cnf, M)
 print(f"\n\nCNF is {cnf}\n")
 
 print(f"\n\nANSWER IS {answer}\n\n")
-"""
 
+
+"""

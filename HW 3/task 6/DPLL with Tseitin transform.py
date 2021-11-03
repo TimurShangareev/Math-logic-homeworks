@@ -10,7 +10,9 @@ Created on Tue Oct 19 22:49:05 2021
 
 @author: chote
 """
+
 """
+python 3.9
 Формулы содержат только коньюнкции, дизьюнкции и литералы, записываются в 
 виде кортежей f = (a,b), где
 a - тип связки логической ('var', '|', '!', '&')
@@ -273,3 +275,123 @@ M = [None] * (len(oldvs) + len(newvs) + 1)
 print(f"l&d after CNF is {[[l]]+d}\n")
 answer = DPLL([[l]]+d, M)
 print(f"\n\nANSWER IS {answer}\n\n")
+
+
+"""
+Применяю DPLL к формуле из задания 3 этой лекции.
+Копировал код из задания 3 и немного изменил.
+"""
+
+import networkx as nx
+import itertools
+from sympy import symbols
+from sympy import sympify, true, false, Or
+from sympy.logic.boolalg import to_cnf
+from sympy.logic.inference import satisfiable
+from math import *
+
+def find_cliques_size_k(graph, clique_size):
+    i = 0
+    cliques = []
+    for clique in nx.find_cliques(graph):
+        if len(clique) == clique_size:
+            i += 1
+            cliques.append(clique)
+        elif len(clique) > k:
+            cliques += list(itertools.combinations(clique, k))
+    return cliques
+
+
+def make_dis_from_symbols(syms):
+    out = false
+    for s in syms:
+        out = out | s
+    return out
+
+def make_con_from_symbols(syms):
+    out = true
+    for s in syms:
+        out = out & s
+    return out
+
+def formula_clique_colorized_by_one_color(clique, var_to_colors_SYMS, colors):
+    dises_SYM = []    
+    for color in colors:
+        color_vars = []
+        for v in clique:
+            color_vars.append(var_to_colors_SYMS[v][color])
+        dis = make_dis_from_symbols(list(map(lambda x: ~x, color_vars)))
+        dises_SYM.append(dis)
+    return make_con_from_symbols(dises_SYM)
+    
+
+def make_formula_on_all_cliques(cliques, varlist, color_count):
+    var_to_colorS_SYMS, var_to_colorS_VAR = make_colorized_syms(varlist, color_count)
+    print(f"\nvar_to_colorS_SYMS  is {var_to_colorS_SYMS}\n")
+    colors = range(color_count)
+    
+    formula = true
+    
+    cnf = []
+    
+    for clique in cliques:
+        formula = formula & formula_clique_colorized_by_one_color(clique,
+                                                                  var_to_colorS_SYMS,
+                                                                  colors)
+        for color in colors:
+            color_vars = []
+            for v in clique:
+                color_vars.append(var_to_colorS_VAR[v][color])
+            dis = list(map(lambda x: -x, color_vars))
+            cnf.append(dis)
+                
+    print(f"formula is {formula}" )
+    
+    return var_to_colorS_VAR, formula, cnf
+    
+    
+def make_colorized_syms(var_list, color_count):
+    var_to_colorS_SYMS = {}
+    var_to_colorS_VAR = {}
+    for v in var_list:
+        ss = [f"x_{v}_{i}" for i in range(color_count)]
+        dim = (log10(color_count)//1 + 1)
+        ints=[v + (i+1)*(1/(10**dim)) for i in range(color_count)]
+        syms = list(symbols(' '.join(ss)))
+        print(f"syms is {syms}")
+        var_to_colorS_SYMS[v] = syms
+        var_to_colorS_VAR[v] = ints
+    return var_to_colorS_SYMS, var_to_colorS_VAR
+
+
+G = nx.Graph()
+G.add_edge(1, 2)  # default edge data=1
+G.add_edge(2, 3, weight=0.9)  # specify edge data
+
+edges = [ [ 1, 2 ],
+         [ 2, 3 ],
+         [ 3, 1 ],
+         [ 4, 3 ],
+         [ 4, 5 ],
+         [ 5, 3 ] ]
+
+k = 3;
+G.add_edges_from(edges)
+
+cliques = find_cliques_size_k(G, k)
+
+
+
+var_to_colorS_VAR, _ , cnf = make_formula_on_all_cliques(cliques, G.nodes(), k)
+
+M = { }
+for i in  var_to_colorS_VAR.values():
+    for v in i:
+        M[v] = None
+print(f"\nM is {M}\n")
+answer = DPLL(cnf, M)
+print(f"\n\nCNF is {cnf}\n")
+
+print(f"\n\nANSWER IS {answer}\n\n")
+
+

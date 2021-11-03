@@ -152,7 +152,7 @@ def EliminateLiteral(S, lit):
     return out
 
 def UnitPropogate(S, lit):
-    print(f"UnitPropogate for lit {lit} and S =", S)
+#    print(f"UnitPropogate for lit {lit} and S =", S)
 #    tmp = [c for c in S if lit in c]
 #    tmp2 = [c for c in S if c not in tmp]
     s = [c for c in S if lit not in c]
@@ -214,7 +214,7 @@ def DPLL(S, M):
                 return ('UNSAT', None)
             S = UnitPropogate(S, diz[0])
             M[abs(diz[0])] = sign(diz[0])
-            print(f"Propogated for lit {diz[0]} and S =", S)
+            #print(f"Propogated for lit {diz[0]} and S =", S)
             
         print(f"S is ", S)
         if(len(S) == 0):
@@ -272,14 +272,59 @@ print(f"\n\nS is {S}")
 print(f"\n\nANSWER IS {answer}\n\n")
     
 M = [None] * (len(oldvs) + len(newvs) + 1)
-print(f"l&d after CNF is {[[l]]+d}\n")
+print(f"l&d after CNF_Tseitin is {[[l]]+d}\n")
 answer = DPLL([[l]]+d, M)
 print(f"\n\nANSWER IS {answer}\n\n")
 
 
+
+
+
+
+
+
+
+
+def make_con2pref(con, accum, oldvar, newvar):
+    if(len(con) == 1):
+        return [con[0], accum]
+        
+    
+    l1, d1 = make_con2pref([con[0]], accum, oldvar, newvar)
+    l2, d2 = make_con2pref(con[1:], d1, oldvar, newvar)
+    p = search_new_var_name(oldvar, newvar)
+    d = []+d2
+    d.append([l1, -p])
+    d.append([l2, -p])
+    d.append([p,-l2, -l1])
+    
+    return [p, d]
+    
+def dnf2cnf_Tseitin_sup(dnf, b, oldvar, newvar):
+    if(len(dnf) == 1):
+        return make_con2pref(dnf[0], b, oldvar, newvar)
+    print(dnf)
+    l1, d1 = make_con2pref(dnf[0], b, oldvar, newvar)
+    l2, d2 = dnf2cnf_Tseitin_sup(dnf[1:], d1, oldvar, newvar)
+    p = search_new_var_name(oldvar, newvar)
+    newvar.append(p)
+    d = []+d2
+    d.append( [-l1, p])
+    d.append([-l2, p])
+    d.append( [-p, l1, l2])
+    return [p, d]
+
+def dnf2cnf_Tseitin(dnf, oldvar, newvar):
+    print(dnf)
+    l, d = dnf2cnf_Tseitin_sup(dnf, [], oldvar, newvar)
+    return [[-l]]+d
+
 """
 Применяю DPLL к формуле из задания 3 этой лекции.
+Формула - проверка того, что каждая клика размера 3 (треугольник) нашего графа 
+    не расскаршиваема в один цвет
 Копировал код из задания 3 и немного изменил.
+
 """
 
 import networkx as nx
@@ -288,6 +333,7 @@ from sympy import symbols
 from sympy import sympify, true, false, Or
 from sympy.logic.boolalg import to_cnf
 from sympy.logic.inference import satisfiable
+from itertools import combinations
 from math import *
 
 def find_cliques_size_k(graph, clique_size):
@@ -314,29 +360,73 @@ def make_con_from_symbols(syms):
         out = out & s
     return out
 
-def formula_clique_colorized_by_one_color(clique, var_to_colors_SYMS, colors):
+def formula_clique_colorized_by_one_color(clique, varlist, newvars, var_to_colors_VARS, colors):
+    dises = []
+    one_color_foreach_vert = [] #dnf
+    
+    for v in clique:
+        tmp_dnf = f_vert_colorized_by_one_color(v, var_to_colors_VARS, colors)
+        cnf_tmp = dnf2cnf_Tseitin(tmp_dnf, varlist, newvars)
+        one_color_foreach_vert += cnf_tmp
+    
+    one_color_for_triangle = []
+    for color in colors:
+        color_vars = []
+        
+        #f = true
+        for v in clique:
+            #f = f & f_vert_colorized_by(v, color, var_to_colors_SYMS)
+            color_vars.append(-var_to_colors_VARS[v][color])
+        one_color_for_triangle.append( color_vars )
+        #dis = make_dis_from_symbols(list(map(lambda x: ~x, color_vars)))
+        #dises.append(dis)
+        #print(f"conjunct is {to_cnf(~f)}")   
+        #out = out & ~f
+    #return make_con_from_symbols(dises)
+    #print(f"one_color_for_triangle is {one_color_for_triangle}")
+    #print(f"one_color_foreach_vert is {one_color_foreach_vert}")
+    return one_color_foreach_vert + one_color_for_triangle
+    
     dises_SYM = []    
     for color in colors:
         color_vars = []
         for v in clique:
-            color_vars.append(var_to_colors_SYMS[v][color])
+            color_vars.append(var_to_colors_VARS[v][color])
         dis = make_dis_from_symbols(list(map(lambda x: ~x, color_vars)))
         dises_SYM.append(dis)
     return make_con_from_symbols(dises_SYM)
     
+def f_vert_colorized_by(vert, color, var_to_colors_VARS):
+    con = []
+    for i, sc in enumerate(var_to_colors_VARS[vert]):
+        if(i != color):
+            con.append(-sc)
+        else:
+            con.append(sc)
+     
+    return con
+
+def f_vert_colorized_by_one_color(vert, var_to_colors_VARS, colors):
+    dnf = []
+    for color in colors:
+        dnf.append( f_vert_colorized_by(vert, color, var_to_colors_VARS))
+    return dnf
+
 
 def make_formula_on_all_cliques(cliques, varlist, color_count):
     var_to_colorS_SYMS, var_to_colorS_VAR = make_colorized_syms(varlist, color_count)
     print(f"\nvar_to_colorS_SYMS  is {var_to_colorS_SYMS}\n")
     colors = range(color_count)
     
-    formula = true
+    formula = []
     
     cnf = []
+    newvars = []
     
     for clique in cliques:
-        formula = formula & formula_clique_colorized_by_one_color(clique,
-                                                                  var_to_colorS_SYMS,
+        formula += formula_clique_colorized_by_one_color(clique, varlist,
+                                                                 newvars,
+                                                                  var_to_colorS_VAR,
                                                                   colors)
         for color in colors:
             color_vars = []
@@ -347,7 +437,7 @@ def make_formula_on_all_cliques(cliques, varlist, color_count):
                 
     print(f"formula is {formula}" )
     
-    return var_to_colorS_VAR, formula, cnf
+    return var_to_colorS_VAR, newvars, formula, cnf
     
     
 def make_colorized_syms(var_list, color_count):
@@ -363,7 +453,7 @@ def make_colorized_syms(var_list, color_count):
         var_to_colorS_VAR[v] = ints
     return var_to_colorS_SYMS, var_to_colorS_VAR
 
-
+"""
 G = nx.Graph()
 G.add_edge(1, 2)  # default edge data=1
 G.add_edge(2, 3, weight=0.9)  # specify edge data
@@ -382,16 +472,18 @@ cliques = find_cliques_size_k(G, k)
 
 
 
-var_to_colorS_VAR, _ , cnf = make_formula_on_all_cliques(cliques, G.nodes(), k)
+var_to_colorS_VAR, newvars, cnf, _ = make_formula_on_all_cliques(cliques, G.nodes(), k)
 
 M = { }
 for i in  var_to_colorS_VAR.values():
     for v in i:
         M[v] = None
+for i in newvars:
+    M[i] = None
 print(f"\nM is {M}\n")
 answer = DPLL(cnf, M)
 print(f"\n\nCNF is {cnf}\n")
 
 print(f"\n\nANSWER IS {answer}\n\n")
-
+"""
 

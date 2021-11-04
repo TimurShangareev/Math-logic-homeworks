@@ -19,6 +19,15 @@ from numpy import sign
 
 from functools import reduce
 
+"""
+Применяется DPLL к формуле: верно ли, что в графе каждая клика размера 3 (треугольник)
+может быть раскрашена в более чем 1 цвет.
+
+Преобразование Цейтина применятся на промежуточных шагах к формулам:
+    верно ли, что вершина раскрашена хотя бы в один из цветов,
+    но не покрашена при этом во все остальные.
+
+"""
 
 def search_new_sym(syms):
     possible_max_int = len(syms)
@@ -28,8 +37,7 @@ def search_new_sym(syms):
 
     
 def to_CNF(formula, oldsyms = None, newsyms = set()):
-    """Convert an NNF into CNF using the Tseitin Encoding."""
-    print(f"{formula} WILL BE CONVERTED")
+    #print(f"{formula} WILL BE CONVERTED")
     
     if oldsyms == None:
         oldsyms = formula.atoms()

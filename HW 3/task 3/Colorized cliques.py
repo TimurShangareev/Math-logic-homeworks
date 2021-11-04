@@ -11,6 +11,7 @@ from sympy import sympify, true, false, Or
 from sympy.logic.boolalg import to_cnf
 from sympy.logic.inference import satisfiable
 from itertools import combinations
+from math import log10
 
 
 def find_subcliques_size_k(clique, sub_clique_size):
@@ -113,7 +114,7 @@ def check_all_subcliques_in_clique(cliques, varlist, color_count):
                                                                   var_to_colors_SYMS,
                                                                   colors)
         
-    #print(f"formula is {formula}")
+    print(f"formula is {formula}")
     answer = satisfiable(formula)
     if(answer != False):
         print(f"model is {answer}")
@@ -125,7 +126,9 @@ def check_all_subcliques_in_clique(cliques, varlist, color_count):
 def make_colorized_syms(var_list, color_count):
     var_to_color_var = {}
     for v in var_list:
-        ss = [f"x_{v}_{i}" for i in range(color_count)]
+        dim = (log10(color_count)//1 + 1)
+
+        ss = [f"{v + (i+1)*(1/(10**dim))}" for i in range(color_count)]
         syms = list(symbols(' '.join(ss)))
         print(f"syms is {syms}")
         var_to_color_var[v] = syms

@@ -447,6 +447,7 @@ def make_colorized_syms(var_list, color_count):
         ss = [f"x_{v}_{i}" for i in range(color_count)]
         dim = (log10(color_count)//1 + 1)
         ints=[v + (i+1)*(1/(10**dim)) for i in range(color_count)]
+        ss = [str(i) for i in ints]
         syms = list(symbols(' '.join(ss)))
         print(f"syms is {syms}")
         var_to_colorS_SYMS[v] = syms

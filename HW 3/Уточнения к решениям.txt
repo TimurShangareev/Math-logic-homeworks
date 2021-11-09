@@ -1,0 +1,13 @@
+в задаче 7:
+там не нужны строки Res_Concl(S) += l.
+Только в 12 и 13 строках Res_Concl(UP(S'+{l}, l)) = Res_Concl(S) + {UP(S'+{l}, l)},
+где UP - UnitPropogate - шаг резолюции
+На 6 и 9 строках должно быть соответственно:
+	Res_Concl(UP(S,_)) = Res_Concl(S) + { UP(S, _)) }
+	S := UP(S,_)
+	Res_Concl(ElimPureLits(S)) = Res_Concl(S) + {ElimPureLits(S)}
+	S: = ElimPureLits(S)
+Если пустой дизъюнкт принадлежит S, то UNSAT и return UNSAT, Res_Concl(S)+{пустой дизъюнкт).
+Если S - пустое, то SAT.
+
+	

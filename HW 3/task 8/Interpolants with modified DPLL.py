@@ -320,9 +320,9 @@ def containsEmptyDizLabeled(SL):
     return False
 
 def getEmptyDizLabeled(SL):
-    for v in SL:
-        if(len(v[0]) == 0):
-            return v
+    for diz in SL:
+        if(len(diz[0]) == 0):
+            return diz
         
 def getPureLiteralLabeled(SL):
     for diz in SL:
@@ -376,8 +376,8 @@ def interpolantdsDPLL(SL, atPHI, atXI, M):
             for v in SL:
                 if(l not in v[0]):
                     out.append(v)
-            S = out
-            print(f"PURE {l} was eliminated SL is ", SL)
+            SL = out
+            print(f"PURE {l} was eliminated SL is {SL}", SL)
             M[abs(l)] = sign(l)
         
     if(len(SL) == 0):
@@ -385,12 +385,12 @@ def interpolantdsDPLL(SL, atPHI, atXI, M):
     lit = ChooseLiteralLabeled(SL)
     print(M)
     print(f"lit is {lit}")
-    print(f"SL is", SL)
+    print(f"SL is {SL}")
     M[abs(lit)] = sign(lit)
     tmp = [[]] if abs(lit) in atPHI else []
     temp = interpolantdsDPLL(SL + [(  [lit], tmp  )], atPHI, atXI, M)
     if(temp[0] == 'SAT'):
-        return ('SAT', temp[1])
+        return temp
     else:
         M[abs(lit)] = sign(lit)
         return interpolantdsDPLL(SL + [(  [-lit], tmp  )], atPHI, atXI, M)

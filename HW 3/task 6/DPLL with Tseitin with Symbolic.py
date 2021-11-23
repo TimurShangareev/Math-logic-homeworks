@@ -27,8 +27,12 @@ from functools import reduce
     верно ли, что вершина раскрашена хотя бы в один из цветов,
     но не покрашена при этом во все остальные.
 
-Формула в любых комбинациях (мой DPLL/встроенный в SymPy Sat solver) x (мой to_CNF преобразованием Цейтина / встроенный в SymPy to_cnf)
- была выполнима либо выполнима во всех комбинациях,, либо не  выполнимама во всех комбинациях
+Формулы в любых комбинациях (мой DPLL/встроенный в SymPy Sat solver) x (мой 
+ to_CNF преобразованием Цейтина / встроенный в SymPy to_cnf)
+ были либо выполнимы во всех комбинациях, либо не  выполнимама во всех комбинациях.
+ (Эти невыполнимые формулы получались, когда неверно их строил. Для них получалось,
+  что они в SymPy сатсолвере не выполнимы, и с моим сатсолвером/преобразованием 
+  Цейтина не выполнимы. Воспроизвести их не удалось, в решении и так бардак).
 """
 
 def search_new_sym(syms):
@@ -248,12 +252,12 @@ def find_max_clique(graph, color_count, min_divercity_clique_size=3):
     for clique in nx.find_cliques(graph):
         print(f"CLIQUE IS {clique}")
         if (len(clique) == min_divercity_clique_size and len(clique) > len(cur_max_clique)
-        and check_all_subcliques_in_clique([clique], graph.nodes, color_count)):
+        and check_all_subcliques_in_clique_by_Tseitin([clique], graph.nodes, color_count)):
             cur_max_clique = clique
             
         elif len(clique) > min_divercity_clique_size and len(clique) > len(cur_max_clique):
             subcliqueS = list(itertools.combinations(clique, min_divercity_clique_size))
-            is_good = check_all_subcliques_in_clique(subcliqueS, graph.nodes, color_count)
+            is_good = check_all_subcliques_in_clique_by_Tseitin(subcliqueS, graph.nodes, color_count)
             if is_good:
                 cur_max_clique = clique
                 
@@ -273,7 +277,7 @@ def make_con_from_symbols(syms):
         out = out & s
     return out
 
-def formula_clique_colorized_by_one_color(clique, syms_all, var_to_colors_SYMS, colors):
+def formula_clique_colorized_by_one_color_by_Tseitin_by_Tseitin(clique, syms_all, var_to_colors_SYMS, colors):
     dises = []
     one_color_foreach_vert = true
     
@@ -301,6 +305,7 @@ def formula_clique_colorized_by_one_color(clique, syms_all, var_to_colors_SYMS, 
     #print(f"one_color_foreach_vert is {one_color_foreach_vert}")
     return one_color_foreach_vert & one_color_for_triangle
     
+
 def f_vert_colorized_by_one_color(vert, var_to_colors_SYMS, colors):
     dis = false
     for color in colors:
@@ -318,7 +323,7 @@ def f_vert_colorized_by(vert, color, var_to_colors_SYMS):
      
     return con
     
-def check_all_subcliques_in_clique(cliques, varlist, color_count):
+def check_all_subcliques_in_clique_by_Tseitin(cliques, varlist, color_count):
     var_to_colors_SYMS = make_colorized_syms(varlist, color_count)
     #print(f"var_to_colors_SYMS  is {var_to_colors_SYMS}")
     colors = range(color_count)
@@ -326,17 +331,17 @@ def check_all_subcliques_in_clique(cliques, varlist, color_count):
     for v in var_to_colors_SYMS.values():
         all_syms += v
     all_syms = set(all_syms)
-    print(f"ALL_SSYMS IS {all_syms}")
+    #print(f"ALL_SYMS IS {all_syms}")
     
     formula = true
     
     for triangle in cliques:
-        formula = formula & formula_clique_colorized_by_one_color(triangle, all_syms,
+        formula = formula & formula_clique_colorized_by_one_color_by_Tseitin(triangle, all_syms,
                                                                   var_to_colors_SYMS,
                                                                   colors)
     M = {float(str(list(a.atoms())[0])):None for a in all_syms}
     cnf = []
-    print(f"\n\n{sorted(M.items(), key = lambda kv: kv[0])}\n\n")
+    print(f"\nM is\n{sorted(M.items(), key = lambda kv: kv[0])}\n\n")
     #print(f"\n\nM is {M}\n\n")
     ars = formula.args
     for disj in ars:
@@ -397,5 +402,5 @@ k = 3;
 G.add_edges_from(edges)
 cliques = find_subcliques_size_k(G, k)
 
-(check_all_subcliques_in_clique(cliques, G.nodes, k))
+(check_all_subcliques_in_clique_by_Tseitin(cliques, G.nodes, k))
 
